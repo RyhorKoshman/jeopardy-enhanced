@@ -139,6 +139,67 @@ npm run dev                                  # in one terminal
 node server/test/smoke-game.mjs              # in another — drives a full game
 ```
 
+## Deploy
+
+This app needs a long-running Node web service plus Postgres. It cannot be
+deployed as a static-only site because rooms/gameplay use Socket.IO and clues
+are loaded from the database.
+
+Recommended production shape:
+
+- one Node web service running the Fastify/Socket.IO server
+- one managed Postgres database
+- one server instance to start with, because active room state is in memory
+
+Build and start commands from the repo root:
+
+```sh
+npm run install:all
+npm run build
+npm start
+```
+
+For Render/Railway-style hosts, use:
+
+```sh
+Build command: npm run install:all && npm run build
+Start command: npm start
+Health check path: /health
+```
+
+Set these production environment variables:
+
+```sh
+DATABASE_URL=postgresql://...
+AUTH_SECRET=<long-random-secret>
+CLIENT_ORIGIN=https://your-deployed-domain.example
+AUTH_TTL_SECONDS=2592000
+PRESENCE_GRACE_MS=45000
+OPENAI_API_KEY=<optional>
+OPENAI_MODEL=gpt-4o-mini
+```
+
+The deployed server binds to the platform-provided `PORT` and serves the built
+React app from `client/dist` when `NODE_ENV=production`.
+
+### Load production Postgres
+
+Managed Postgres providers do not run the local Docker init scripts. Load the
+schema and dataset once from your machine:
+
+```sh
+./scripts/download-dataset.sh
+psql "$DATABASE_URL" -f db/01-schema.sql
+psql "$DATABASE_URL" -f db/03-users.sql
+psql "$DATABASE_URL" -c "\copy clues(round, clue_value, daily_double_value, category, comments, answer, question, air_date, notes) FROM 'data/combined_season1-41.tsv' WITH (FORMAT csv, DELIMITER E'\t', HEADER true, QUOTE E'\b')"
+```
+
+Then verify:
+
+```sh
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM clues"
+```
+
 ## Reset the database
 
 The init scripts only run on a fresh volume. To reload from scratch:
