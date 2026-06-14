@@ -171,6 +171,7 @@ Set these production environment variables:
 
 ```sh
 DATABASE_URL=postgresql://...
+DATABASE_SSL=true
 AUTH_SECRET=<long-random-secret>
 CLIENT_ORIGIN=https://your-deployed-domain.example
 AUTH_TTL_SECONDS=2592000
@@ -181,6 +182,8 @@ OPENAI_MODEL=gpt-4o-mini
 
 The deployed server binds to the platform-provided `PORT` and serves the built
 React app from `client/dist` when `NODE_ENV=production`.
+Hosted Postgres URLs use SSL by default; set `DATABASE_SSL=false` only for local
+or private databases that do not require TLS.
 
 ### Load production Postgres
 
